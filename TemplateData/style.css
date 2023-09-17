@@ -42,8 +42,8 @@ div#gameContainer canvas[data-pixel-art="true"] {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    width: 466px;
-    height: 466px;
+    width: 50%;
+    height: 50%;
 }
 
 #custom-loader {
