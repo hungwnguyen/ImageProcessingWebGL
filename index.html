@@ -5,47 +5,24 @@
 	<meta charset="utf-8">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>Image Processing</title>
-	<link rel="icon" href="slam.png" type="image/x-icon">
-	<style>
-		html,
-		body {
-			background: #000;
-			width: 100%;
-			height: 100%;
-			overflow: visible;
-			padding: 0;
-			margin: 0;
-		}
-
-		div#gameContainer {
-			background: transparent !important;
-			position: absolute;
-		}
-
-		div#gameContainer canvas {
-			position: absolute;
-		}
-
-		div#gameContainer canvas[data-pixel-art="true"] {
-			position: absolute;
-			image-rendering: optimizeSpeed;
-			image-rendering: -webkit-crisp-edges;
-			image-rendering: -moz-crisp-edges;
-			image-rendering: -o-crisp-edges;
-			image-rendering: crisp-edges;
-			image-rendering: -webkit-optimize-contrast;
-			image-rendering: optimize-contrast;
-			image-rendering: pixelated;
-			-ms-interpolation-mode: nearest-neighbor;
-		}
-	</style>
+	<link rel="icon" href="TemplateData/Loading Icon.png" type="image/x-icon">
+	<link rel="stylesheet" href="TemplateData/style.css">
 </head>
 
 <body>
 	<div id="gameContainer">
 		<canvas id="unity-canvas" data-pixel-art=""></canvas>
+		<div id="unity-custom-loading-screen">
+			<div id="custom-logo"></div>
+			<div id="custom-loader">
+			  <div class="fill"></div>
+			  <div class="label"></div>
+			</div>
+		</div>
 		<script src="Build/WebGL.loader.js"></script>
 		<script>
+			var loadingScreen = document.querySelector("#unity-custom-loading-screen");
+			var customLoadingBar = document.querySelector("#custom-loader");
 			var canvas = document.querySelector("#unity-canvas");
 			var config = {
 				dataUrl: "Build/WebGL.data",
@@ -63,11 +40,25 @@
 			} catch (e) {
 				scaleToFit = true;
 			}
-			function progressHandler(progress) {
-				var percent = progress * 100 + '%';
-				canvas.style.background = 'linear-gradient(to right, white, white ' + percent + ', transparent ' + percent + ', transparent) no-repeat center';
-				canvas.style.backgroundSize = '100% 1rem';
+
+			function unityShowBanner(msg, type) {
+				function updateBannerVisibility() {
+				warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+				}
+				var div = document.createElement('div');
+				div.innerHTML = msg;
+				warningBanner.appendChild(div);
+				if (type == 'error') div.style = 'background: red; padding: 10px;';
+				else {
+				if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+				setTimeout(function() {
+					warningBanner.removeChild(div);
+					updateBannerVisibility();
+				}, 5000);
+				}
+				updateBannerVisibility();
 			}
+			
 			function onResize() {
 				var container = canvas.parentElement;
 				var w;
@@ -77,12 +68,13 @@
 					w = window.innerWidth;
 					h = window.innerHeight;
 
-					var r = 750 / 422;
+					var r = 422 / 750;
 
 					if (w * r > window.innerHeight) {
-						w = Math.min(w, Math.ceil(h / r));
+						h = Math.min(h, Math.ceil(w / r));
+					} else {
+						w = Math.min(w, Math.ceil(h * r));
 					}
-					h = Math.floor(w * r);
 				} else {
 					w = 422;
 					h = 750;
@@ -93,12 +85,36 @@
 				container.style.top = Math.floor((window.innerHeight - h) / 2) + "px";
 				container.style.left = Math.floor((window.innerWidth - w) / 2) + "px";
 			}
-			createUnityInstance(canvas, config, progressHandler).then(function (instance) {
+
+			createUnityInstance(canvas, config,(progress) => {
+					unitySetLoaderProgressTo(progress);
+			}).then(function (instance) {
 				canvas = instance.Module.canvas;
 				onResize();
+				setTimeout(function() {
+					loadingScreen.style.display = "none";
+				}, 2000);
 			});
 			window.addEventListener('resize', onResize);
 			onResize();
+			// value - 0 to 1
+			function unitySetLoaderProgressTo(value)
+			{
+				const fill = customLoadingBar.getElementsByClassName("fill")[0];
+				const fillText = customLoadingBar.getElementsByClassName("label")[0];
+
+				fill.animate(
+				[
+					{ width: (value * 100) + "%" }
+				],
+				{
+					duration: 300,
+					fill: "forwards"
+				}
+				);
+
+				fillText.textContent = (value * 100).toFixed() + "%";
+			}
 
 			if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
 				// Mobile device style: fill the whole browser client area with the game canvas:
